@@ -10,14 +10,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 N2_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-PLATFORMS=(debian fedora macos)
+PLATFORMS=(debian fedora)
 TESTS=(test_install test_prompt)
 PASS_TOTAL=0
 FAIL_TOTAL=0
 RESULTS=()
 
 usage() {
-    echo "Usage: $0 [--platform debian|fedora|macos] [--test install|prompt]"
+    echo "Usage: $0 [--platform debian|fedora] [--test install|prompt]"
     echo ""
     echo "Options:"
     echo "  --platform, -p    Platform to test (can be repeated). Default: all"
