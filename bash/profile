@@ -13,8 +13,9 @@ __n2_get_root() {
 }
 
 __n2_get_m2_root() {
-    local ret
+    local ret p
     for p in $HOME/.m2*; do
+        [ -d "$p" ] || continue
         if [ -z "$ret" ]; then
             ret="$p"
         else
@@ -22,11 +23,17 @@ __n2_get_m2_root() {
         fi
     done
     if [ -n "${N2_EXTRA_M2_DIRS:-}" ]; then
-        if [ -z "$ret" ]; then
-            ret="$N2_EXTRA_M2_DIRS"
-        else
-            ret="$ret:$N2_EXTRA_M2_DIRS"
-        fi
+        local extra_dir
+        IFS=',' read -ra __n2_extra_dirs <<< "$N2_EXTRA_M2_DIRS"
+        for extra_dir in "${__n2_extra_dirs[@]}"; do
+            [ -d "$extra_dir" ] || continue
+            if [ -z "$ret" ]; then
+                ret="$extra_dir"
+            else
+                ret="$ret:$extra_dir"
+            fi
+        done
+        unset __n2_extra_dirs
     fi
     echo "$ret"
 }

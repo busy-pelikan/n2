@@ -337,6 +337,19 @@ These variables can be set in M2 rc or profile scripts to control N2
 behavior.
 
 .TP
+.B N2_EXTRA_M2_DIRS
+Specifies additional M2 directories to use, in addition to the
+auto-discovered
+.B ~/.m2*
+directories.  Value is a comma-separated list of absolute paths.
+Non-existent directories are silently ignored.  Directories are appended
+after the auto-discovered ones, so they are loaded last (highest priority).
+Example:
+.EX
+    export N2_EXTRA_M2_DIRS=/opt/shared-m2,/srv/team-m2
+.EE
+
+.TP
 .B N2_ENABLE_STATUS_LINE
 Enables the status line after each command.  Default:
 .BR yes .
