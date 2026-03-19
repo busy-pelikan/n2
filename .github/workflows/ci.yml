@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [debian, fedora]
+        test: [install, prompt]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build ${{ matrix.platform }} image
+        run: |
+          docker build \
+            -t n2-e2e-${{ matrix.platform }} \
+            -f tests/e2e/platforms/${{ matrix.platform }}.Dockerfile \
+            .
+
+      - name: Run test_${{ matrix.test }} on ${{ matrix.platform }}
+        run: |
+          docker run --rm n2-e2e-${{ matrix.platform }} \
+            bash tests/e2e/tests/test_${{ matrix.test }}.sh
