@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# E2E test: installation interaction via tmux
+# Tests that install.sh runs interactively, accepts 'A' to auto-confirm all,
+# and successfully writes dotfiles to a PLAYGROUND home directory.
+
+set -euo pipefail
+
+N2_DIR=${N2_DIR:-/n2}
+SESSION=n2_install_test
+PASS=0
+FAIL=0
+
+pass() { echo "PASS: $*"; PASS=$((PASS + 1)); }
+fail() { echo "FAIL: $*"; FAIL=$((FAIL + 1)); }
+
+cleanup() {
+    tmux kill-session -t "$SESSION" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+echo "=== test_install.sh ==="
+
+# Start a detached tmux session
+tmux new-session -d -s "$SESSION" -x 220 -y 50
+
+# Launch install.sh in PLAYGROUND mode (interactive — no AUTO_CONFIRM)
+tmux send-keys -t "$SESSION" "PLAYGROUND=yes bash '$N2_DIR/install.sh' 2>&1; echo 'INSTALL_EXIT_CODE:'$?" Enter
+
+# Wait for the first confirmation prompt to appear
+sleep 3
+
+# Send 'A' to auto-confirm all remaining prompts
+tmux send-keys -t "$SESSION" "A" Enter
+
+# Allow time for all five dotfile installs to complete
+sleep 5
+
+# Capture the full pane output
+OUTPUT=$(tmux capture-pane -t "$SESSION" -p -S -)
+
+echo "--- captured output ---"
+echo "$OUTPUT"
+echo "--- end of output ---"
+
+# 1. Banner appeared
+if echo "$OUTPUT" | grep -q "N2 installation complete"; then
+    pass "Installation banner appeared"
+else
+    fail "Installation banner not found"
+fi
+
+# 2. Playground mode was active
+if echo "$OUTPUT" | grep -q "playground mode"; then
+    pass "Playground mode banner shown"
+else
+    fail "Playground mode banner not found"
+fi
+
+# 3. Extract the playground directory from the output
+PLAYGROUND_DIR=$(echo "$OUTPUT" | grep -o "Installed to playground dir: [^[:space:]]*" | awk '{print $NF}' | tail -1)
+
+if [ -n "$PLAYGROUND_DIR" ] && [ -d "$PLAYGROUND_DIR" ]; then
+    pass "Playground directory exists: $PLAYGROUND_DIR"
+else
+    fail "Could not determine playground directory (got: '$PLAYGROUND_DIR')"
+    echo "Exit status: $FAIL failures out of $((PASS + FAIL)) tests"
+    exit 1
+fi
+
+# 4. Verify each expected dotfile was written
+for dotfile in .bashrc .bash_profile .vimrc .tmux.conf .gitconfig; do
+    if [ -f "$PLAYGROUND_DIR/$dotfile" ]; then
+        pass "$dotfile created in playground dir"
+    else
+        fail "$dotfile not found in playground dir"
+    fi
+done
+
+# 5. Verify the N2 entrance markers are present in .bashrc
+if grep -q "N2 ENTRANCE BEGIN" "$PLAYGROUND_DIR/.bashrc" 2>/dev/null; then
+    pass ".bashrc contains N2 entrance marker"
+else
+    fail ".bashrc missing N2 entrance marker"
+fi
+
+# 6. Verify .bash_profile sources n2's bash/profile
+if grep -q "bash/profile" "$PLAYGROUND_DIR/.bash_profile" 2>/dev/null; then
+    pass ".bash_profile references bash/profile"
+else
+    fail ".bash_profile does not reference bash/profile"
+fi
+
+echo
+echo "Results: $PASS passed, $FAIL failed"
+
+[ "$FAIL" -eq 0 ] || exit 1
+echo "All install tests passed!"
