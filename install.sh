@@ -94,7 +94,11 @@ print_diff() {
     echo "Will apply diff to file $(fmt 1 <<< $path):"
 
     [ -e "$path" ] || path=/dev/null
-    (diff -C5 "$path" <(cat "$path" <(echo "$snippet")) || true) | fmt 33 | indent '  '
+    if command -v git &>/dev/null; then
+        (git diff --no-index --color "$path" <(cat "$path" <(echo "$snippet")) || true) | indent '  '
+    else
+        (diff -C5 "$path" <(cat "$path" <(echo "$snippet")) || true) | fmt 33 | indent '  '
+    fi
 }
 
 is_installed() {
