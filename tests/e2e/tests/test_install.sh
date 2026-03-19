@@ -20,20 +20,42 @@ trap cleanup EXIT
 
 echo "=== test_install.sh ==="
 
+# Helper: wait for a string to appear in the tmux pane
+wait_for() {
+    local pattern=$1
+    local timeout=${2:-30}
+    local elapsed=0
+    while [ $elapsed -lt $timeout ]; do
+        if tmux capture-pane -t "$SESSION" -p -S - | grep -q "$pattern"; then
+            return 0
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    echo "TIMEOUT waiting for: $pattern (after ${timeout}s)"
+    return 1
+}
+
 # Start a detached tmux session
 tmux new-session -d -s "$SESSION" -x 220 -y 50
 
 # Launch install.sh in PLAYGROUND mode (interactive — no AUTO_CONFIRM)
-tmux send-keys -t "$SESSION" "PLAYGROUND=yes bash '$N2_DIR/install.sh' 2>&1; echo 'INSTALL_EXIT_CODE:'$?" Enter
+tmux send-keys -t "$SESSION" "PLAYGROUND=yes bash '${N2_DIR}/install.sh'" Enter
 
-# Wait for the first confirmation prompt to appear
-sleep 3
+# Wait for the first confirmation prompt to actually appear
+wait_for "Looks good?" 30
 
-# Send 'A' to auto-confirm all remaining prompts
+# install.sh uses `read -re -i "Y"` which pre-fills "Y" via readline.
+# Give readline extra time to become ready before sending input, then
+# send Ctrl-U to clear the pre-filled default and type "A" to auto-confirm all.
+sleep 2
+tmux send-keys -t "$SESSION" C-u
+sleep 0.5
 tmux send-keys -t "$SESSION" "A" Enter
 
-# Allow time for all five dotfile installs to complete
-sleep 5
+# Wait for the install completion banner (not the marker in the typed command).
+# "N2 installation complete" appears at the very end of install.sh output.
+wait_for "N2 installation complete" 60
 
 # Capture the full pane output
 OUTPUT=$(tmux capture-pane -t "$SESSION" -p -S -)
