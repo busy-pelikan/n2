@@ -14,17 +14,9 @@ jobs:
       matrix:
         platform: [debian, fedora]
         test: [install, prompt]
+    name: e2e / ${{ matrix.platform }} / ${{ matrix.test }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build ${{ matrix.platform }} image
-        run: |
-          docker build \
-            -t n2-e2e-${{ matrix.platform }} \
-            -f tests/e2e/platforms/${{ matrix.platform }}.Dockerfile \
-            .
-
-      - name: Run test_${{ matrix.test }} on ${{ matrix.platform }}
-        run: |
-          docker run --rm n2-e2e-${{ matrix.platform }} \
-            bash tests/e2e/tests/test_${{ matrix.test }}.sh
+      - name: Run E2E test
+        run: ./tests/e2e/run.sh --platform ${{ matrix.platform }} --test ${{ matrix.test }}
