@@ -66,9 +66,18 @@ run_test_macos() {
     local tmp_home
     tmp_home="$(mktemp -d)"
 
+    # Ensure brew-installed bash (4+) is first in PATH on macOS.
+    # Stock macOS bash is 3.2 which is too old for n2's install.sh.
+    local macos_path="$PATH"
+    if [[ -x /opt/homebrew/bin/bash ]]; then
+        macos_path="/opt/homebrew/bin:$macos_path"
+    elif [[ -x /usr/local/bin/bash ]]; then
+        macos_path="/usr/local/bin:$macos_path"
+    fi
+
     echo "Running $test_script (HOME=$tmp_home)..."
     local rc=0
-    HOME="$tmp_home" N2_DIR="$N2_ROOT" bash "$test_script" 2>&1 || rc=$?
+    HOME="$tmp_home" N2_DIR="$N2_ROOT" PATH="$macos_path" bash "$test_script" 2>&1 || rc=$?
     rm -rf "$tmp_home"
     if [[ $rc -eq 0 ]]; then
         echo "✅ $label passed"
