@@ -559,6 +559,59 @@ The helper function
 .I VAR_NAME VAR_VALUE
 can be used to define bash variables to be printed along with the PS1.
 
+.SH INSTALLATION
+
+To install N2, clone the repository and run
+.BR install.sh :
+
+.EX
+    git clone https://github.com/writeonlylab/n2.git ~/.n2
+    ~/.n2/install.sh
+.EE
+
+The installer adds entrance blocks (delimited by
+.B "=== N2 ENTRANCE BEGIN ==="
+and
+.BR "=== N2 ENTRANCE END ===" )
+to shell rc files such as
+.B ~/.bashrc
+and
+.BR ~/.bash_profile .
+A record of modified files is kept at
+.BR volatile/INSTALLED_FILES .
+
+.SH UNINSTALLATION
+
+To uninstall N2, run
+.B uninstall.sh
+from the N2 directory:
+
+.EX
+    ~/.n2/uninstall.sh
+.EE
+
+The uninstaller automatically:
+
+.RS
+.IP \(bu 2
+Reads
+.B volatile/INSTALLED_FILES
+to find files modified during installation.
+.IP \(bu
+Strips the N2 entrance blocks from each file, creating a
+.B .n2\-bak
+backup alongside each modified file.
+.IP \(bu
+Removes files that become empty after stripping the entrance block (with
+confirmation).
+.IP \(bu
+Optionally removes the N2 directory itself.
+.RE
+
+Set
+.B AUTO_CONFIRM=yes
+to skip all confirmation prompts (useful for scripted removal).
+
 .SH SEE ALSO
 .BR m2 (7),
 .BR bash (1),
