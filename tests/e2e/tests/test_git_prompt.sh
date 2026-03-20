@@ -23,19 +23,25 @@ trap cleanup EXIT
 
 echo "=== test_git_prompt.sh ==="
 
-# Helper: wait for a string to appear in the tmux pane
+# Helper: wait for a string to appear in tmux pane output (not just the input line).
+# When we send "cmd; echo MARKER", MARKER appears once in the typed command.
+# After the command finishes, MARKER appears again as actual output.
+# Waiting for >=2 occurrences ensures the command has actually run.
 wait_for() {
     local pattern=$1
     local timeout=${2:-30}
+    local min_count=${3:-2}
     local elapsed=0
     while [ $elapsed -lt $timeout ]; do
-        if tmux capture-pane -t "$SESSION" -p -S - | grep -qE "$pattern"; then
+        local count
+        count=$(tmux capture-pane -t "$SESSION" -p -S - | grep -cE "$pattern" || true)
+        if [ "$count" -ge "$min_count" ]; then
             return 0
         fi
         sleep 1
         elapsed=$((elapsed + 1))
     done
-    echo "TIMEOUT waiting for: $pattern (after ${timeout}s)"
+    echo "TIMEOUT waiting for: $pattern (count=$count, need=$min_count, after ${timeout}s)"
     return 1
 }
 
@@ -141,11 +147,13 @@ echo "$OUTPUT"
 echo "--- end prompt outside git repo ---"
 
 # After the OUTSIDE_REPO_PROMPT_CHECK line, the next prompt should not contain
-# "mytestrepo[" since we're in /tmp (not a git repo)
-# We check that no [...] git-style indicator is present *after* navigating away.
-# Capture only lines after OUTSIDE_REPO_DONE to avoid earlier matches.
-AFTER_OUTPUT=$(echo "$OUTPUT" | grep -A 20 "OUTSIDE_REPO_DONE" | tail -n +2)
-if echo "$AFTER_OUTPUT" | grep -qE '\[[a-zA-Z0-9_/.-]+\]'; then
+# "mytestrepo[" since we're in /tmp (not a git repo).
+# The n2 git indicator format is: reponame[branchname]
+# We specifically check that no word[word] pattern appears in the prompt lines
+# (excluding verbose trace lines like "[1] -> ..." which start with [digit]).
+AFTER_OUTPUT=$(echo "$OUTPUT" | grep -A 20 "OUTSIDE_REPO_PROMPT_CHECK" | tail -n +2)
+# Match the specific n2 git indicator format: word[word] (e.g. mytestrepo[main])
+if echo "$AFTER_OUTPUT" | grep -qE '[a-zA-Z0-9_.-]+\[[a-zA-Z0-9_/.-]+\]'; then
     fail "Git prompt: git indicator still appears outside git repo"
 else
     pass "Git prompt: no git indicator when outside a git repo"

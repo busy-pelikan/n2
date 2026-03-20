@@ -22,19 +22,25 @@ trap cleanup EXIT
 
 echo "=== test_n2_commands.sh ==="
 
-# Helper: wait for a string to appear in the tmux pane
+# Helper: wait for a string to appear in tmux pane output (not just the input line).
+# When we send "cmd; echo MARKER", the word MARKER appears once in the typed
+# command. After the command finishes, MARKER appears again as actual output.
+# Waiting for >=2 occurrences ensures the command has actually run.
 wait_for() {
     local pattern=$1
     local timeout=${2:-30}
+    local min_count=${3:-2}
     local elapsed=0
     while [ $elapsed -lt $timeout ]; do
-        if tmux capture-pane -t "$SESSION" -p -S - | grep -qE "$pattern"; then
+        local count
+        count=$(tmux capture-pane -t "$SESSION" -p -S - | grep -cE "$pattern" || true)
+        if [ "$count" -ge "$min_count" ]; then
             return 0
         fi
         sleep 1
         elapsed=$((elapsed + 1))
     done
-    echo "TIMEOUT waiting for: $pattern (after ${timeout}s)"
+    echo "TIMEOUT waiting for: $pattern (count=$count, need=$min_count, after ${timeout}s)"
     return 1
 }
 
