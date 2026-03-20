@@ -98,14 +98,29 @@ for dotfile in .bashrc .bash_profile .vimrc .tmux.conf .gitconfig; do
     fi
 done
 
-# 5. Verify the N2 entrance markers are present in .bashrc
+# 5. Verify colorful git diff was used (git diff --no-index produces "diff --git" headers)
+if command -v git &>/dev/null; then
+    if echo "$OUTPUT" | grep -q "diff --git"; then
+        pass "Colorful git diff output detected"
+    else
+        fail "git is available but git diff output not found (expected 'diff --git' header)"
+    fi
+else
+    if echo "$OUTPUT" | grep -q '^\*\*\*'; then
+        pass "Plain diff fallback used (git not available)"
+    else
+        fail "Neither git diff nor plain diff output detected"
+    fi
+fi
+
+# 6. Verify the N2 entrance markers are present in .bashrc
 if grep -q "N2 ENTRANCE BEGIN" "$PLAYGROUND_DIR/.bashrc" 2>/dev/null; then
     pass ".bashrc contains N2 entrance marker"
 else
     fail ".bashrc missing N2 entrance marker"
 fi
 
-# 6. Verify .bash_profile sources n2's bash/profile
+# 7. Verify .bash_profile sources n2's bash/profile
 if grep -q "bash/profile" "$PLAYGROUND_DIR/.bash_profile" 2>/dev/null; then
     pass ".bash_profile references bash/profile"
 else
