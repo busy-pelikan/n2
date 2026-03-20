@@ -65,10 +65,12 @@ run_test_macos() {
 
     local tmp_home
     tmp_home="$(mktemp -d)"
-    trap 'rm -rf "$tmp_home"' RETURN
 
     echo "Running $test_script (HOME=$tmp_home)..."
-    if HOME="$tmp_home" N2_DIR="$N2_ROOT" bash "$test_script" 2>&1; then
+    local rc=0
+    HOME="$tmp_home" N2_DIR="$N2_ROOT" bash "$test_script" 2>&1 || rc=$?
+    rm -rf "$tmp_home"
+    if [[ $rc -eq 0 ]]; then
         echo "✅ $label passed"
         RESULTS+=("PASS $label")
         PASS_TOTAL=$((PASS_TOTAL + 1))
