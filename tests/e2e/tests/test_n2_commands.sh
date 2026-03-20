@@ -58,6 +58,9 @@ if [ -z "$PLAYGROUND_DIR" ] || [ ! -d "$PLAYGROUND_DIR" ]; then
 fi
 echo "Playground dir: $PLAYGROUND_DIR"
 
+# n2 status iterates ~/.n2 and ~/.m2* — create a .n2 symlink so it finds the repo
+ln -s "$N2_DIR" "$PLAYGROUND_DIR/.n2"
+
 # Start a detached tmux session
 tmux new-session -d -s "$SESSION" -x 220 -y 50
 
