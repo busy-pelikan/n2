@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         platform: [debian, fedora]
-        test: [install, prompt, uninstall, n2_commands, git_prompt, status_line]
+        test: [install, prompt, uninstall, n2_commands, git_prompt, status_line, trace]
     name: e2e / ${{ matrix.platform }} / ${{ matrix.test }}
     steps:
       - uses: actions/checkout@v4
