@@ -75,6 +75,10 @@ run_test_macos() {
         macos_path="/usr/local/bin:$macos_path"
     fi
 
+    # Seed .bash_profile in the temp home so tmux login shells inherit
+    # the correct PATH (with brew bash 4+ ahead of stock macOS 3.2).
+    echo "export PATH=\"$macos_path\"" > "$tmp_home/.bash_profile"
+
     echo "Running $test_script (HOME=$tmp_home)..."
     local rc=0
     HOME="$tmp_home" N2_DIR="$N2_ROOT" PATH="$macos_path" bash "$test_script" 2>&1 || rc=$?

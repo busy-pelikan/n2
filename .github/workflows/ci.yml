@@ -31,8 +31,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install tmux
-        run: brew install tmux
+      - name: Install dependencies
+        run: brew install bash tmux
 
       - name: Run E2E test
         run: ./tests/e2e/run.sh --platform macos --test ${{ matrix.test }}
