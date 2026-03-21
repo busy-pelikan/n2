@@ -79,10 +79,16 @@ run_test_macos() {
     # the correct PATH (with brew bash 4+ ahead of stock macOS 3.2).
     echo "export PATH=\"$macos_path\"" > "$tmp_home/.bash_profile"
 
-    echo "Running $test_script (HOME=$tmp_home)..."
+    # Copy the repo so tests that remove $N2_DIR (e.g. uninstall) don't
+    # destroy the real checkout — which breaks actions/checkout post-cleanup.
+    local tmp_n2
+    tmp_n2="$(mktemp -d)/n2"
+    cp -R "$N2_ROOT" "$tmp_n2"
+
+    echo "Running $test_script (HOME=$tmp_home, N2_DIR=$tmp_n2)..."
     local rc=0
-    HOME="$tmp_home" N2_DIR="$N2_ROOT" PATH="$macos_path" bash "$test_script" 2>&1 || rc=$?
-    rm -rf "$tmp_home"
+    HOME="$tmp_home" N2_DIR="$tmp_n2" PATH="$macos_path" bash "$test_script" 2>&1 || rc=$?
+    rm -rf "$tmp_home" "$(dirname "$tmp_n2")"
     if [[ $rc -eq 0 ]]; then
         echo "✅ $label passed"
         RESULTS+=("PASS $label")
