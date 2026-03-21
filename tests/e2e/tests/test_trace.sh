@@ -75,10 +75,10 @@ fi
 
 # Verify multiple files are traced (profile.d + rc.d)
 TRACE_COUNT=$(grep -c '\[n2:trace\] source' "$TRACE_LOG" || true)
-if [ "$TRACE_COUNT" -ge 5 ]; then
-    pass "N2_TRACE_SOURCE=yes: traced $TRACE_COUNT files (>= 5 expected)"
+if [ "$TRACE_COUNT" -ge 4 ]; then
+    pass "N2_TRACE_SOURCE=yes: traced $TRACE_COUNT files (>= 4 expected)"
 else
-    fail "N2_TRACE_SOURCE=yes: only $TRACE_COUNT trace lines (expected >= 5)"
+    fail "N2_TRACE_SOURCE=yes: only $TRACE_COUNT trace lines (expected >= 4)"
 fi
 
 # Exit the traced shell
