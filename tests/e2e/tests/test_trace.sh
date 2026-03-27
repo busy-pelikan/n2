@@ -145,6 +145,60 @@ fi
 tmux send-keys -t "$SESSION" "exit" Enter
 sleep 1
 
+# ---------------------------------------------------------------------------
+# Test 5: Nested sourcing produces indented output
+# ---------------------------------------------------------------------------
+# Create a test file that sources another file
+mkdir -p "$PLAYGROUND_DIR/test_nested"
+cat > "$PLAYGROUND_DIR/test_nested/outer.sh" << 'EOF'
+# outer.sh - sources inner.sh
+__n2_source "$HOME/test_nested/inner.sh"
+EOF
+cat > "$PLAYGROUND_DIR/test_nested/inner.sh" << 'EOF'
+# inner.sh - leaf file
+export INNER_SOURCED=yes
+EOF
+
+NESTED_LOG="$PLAYGROUND_DIR/trace_nested.log"
+tmux send-keys -t "$SESSION" "N2_TRACE_SOURCE=yes HOME='$PLAYGROUND_DIR' bash --login 2>'$NESTED_LOG'" Enter
+sleep 3
+# Source the outer file which will nest-source inner
+tmux send-keys -t "$SESSION" "__n2_source \"\$HOME/test_nested/outer.sh\"" Enter
+sleep 1
+tmux send-keys -t "$SESSION" "echo NESTED_READY" Enter
+wait_for "NESTED_READY" 15
+
+# Check for indentation in nested source (inner.sh should be indented under outer.sh)
+if grep -q '\[n2:trace\]   source' "$NESTED_LOG"; then
+    pass "Nested sourcing: indentation present for nested files"
+else
+    # Show the log for debugging
+    echo "--- nested trace log ---"
+    cat "$NESTED_LOG" 2>/dev/null || echo "(empty)"
+    echo "--- end ---"
+    fail "Nested sourcing: no indentation found for nested source"
+fi
+
+# Verify the hierarchy: outer.sh at level 0, inner.sh at level 1 (indented)
+OUTER_LINE=$(grep 'outer.sh' "$NESTED_LOG" | head -1)
+INNER_LINE=$(grep 'inner.sh' "$NESTED_LOG" | head -1)
+
+if [ -n "$OUTER_LINE" ] && [ -n "$INNER_LINE" ]; then
+    # Extract indentation (spaces after [n2:trace])
+    OUTER_INDENT=$(echo "$OUTER_LINE" | sed 's/.*\[n2:trace\]\( *\)source.*/\1/' | wc -c)
+    INNER_INDENT=$(echo "$INNER_LINE" | sed 's/.*\[n2:trace\]\( *\)source.*/\1/' | wc -c)
+    if [ "$INNER_INDENT" -gt "$OUTER_INDENT" ]; then
+        pass "Nested sourcing: inner.sh is more indented than outer.sh"
+    else
+        fail "Nested sourcing: inner.sh not more indented than outer.sh"
+    fi
+else
+    fail "Nested sourcing: could not find both outer.sh and inner.sh trace lines"
+fi
+
+tmux send-keys -t "$SESSION" "exit" Enter
+sleep 1
+
 # Kill the tmux session
 tmux kill-session -t "$SESSION" 2>/dev/null || true
 
