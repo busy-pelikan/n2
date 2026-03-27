@@ -20,3 +20,19 @@ jobs:
 
       - name: Run E2E test
         run: ./tests/e2e/run.sh --platform ${{ matrix.platform }} --test ${{ matrix.test }}
+
+  e2e-macos:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test: [install, prompt, uninstall, n2_commands, git_prompt, status_line]
+    name: e2e / macos / ${{ matrix.test }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install bash tmux
+
+      - name: Run E2E test
+        run: ./tests/e2e/run.sh --platform macos --test ${{ matrix.test }}
