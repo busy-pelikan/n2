@@ -12,7 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 N2_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 PLATFORMS=(debian fedora)
-TESTS=(test_install test_prompt test_uninstall test_n2_commands test_git_prompt test_status_line)
+TESTS=(test_install test_prompt test_uninstall test_n2_commands test_git_prompt test_status_line test_trace)
 PASS_TOTAL=0
 FAIL_TOTAL=0
 RESULTS=()
